@@ -1,5 +1,6 @@
 var Accessor = require('../accessor');
 var React = require('react');
+var ReactDOM = require('react-dom');
 var TypeaheadSelector = require('./selector');
 var KeyEvent = require('../keyevent');
 var fuzzy = require('fuzzy');
@@ -88,13 +89,16 @@ var Typeahead = React.createClass({
       selection: this.props.value,
 
       // Index of the selection
-      selectionIndex: null
+      selectionIndex: null,
+
+      isFocused: false,
     };
   },
 
   _shouldSkipSearch: function(input) {
     var emptyValue = !input || input.trim().length == 0;
-    return !this.props.showOptionsWhenEmpty && emptyValue;
+    var isFocused = this.state && this.state.isFocused;
+    return (!isFocused && this.props.showOptionsWhenEmpty) || (!this.props.showOptionsWhenEmpty && emptyValue);
   },
 
   getOptionsForValue: function(value, options) {
@@ -318,12 +322,28 @@ var Typeahead = React.createClass({
           onKeyDown={this._onKeyDown}
           onKeyPress={this.props.onKeyPress}
           onKeyUp={this.props.onKeyUp}
-          onFocus={this.props.onFocus}
-          onBlur={this.props.onBlur}
+          onFocus={this._onFocus}
+          onBlur={this._onBlur}
         />
         { this._renderIncrementalSearchResults() }
       </div>
     );
+  },
+
+  _onFocus: function(event) {
+    this.setState({isFocused: true}, function () {
+      this._onTextEntryUpdated();
+    }.bind(this));
+    if ( this.props.onFocus ) {
+      return this.props.onFocus(event);
+    }
+  },
+
+  _onBlur: function(event) {
+    this.setState({isFocused: false});
+    if ( this.props.onBlur ) {
+      return this.props.onBlur(event);
+    }
   },
 
   _renderHiddenInput: function() {
